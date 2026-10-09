@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
 
@@ -31,11 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-
-          # ==============================
           # Chromium
-          # ==============================
-
           - browser: Chromium
             shard: 1
           - browser: Chromium
@@ -45,10 +39,7 @@ jobs:
           - browser: Chromium
             shard: 4
 
-          # ==============================
           # Firefox
-          # ==============================
-
           - browser: Firefox
             shard: 1
           - browser: Firefox
@@ -58,10 +49,7 @@ jobs:
           - browser: Firefox
             shard: 4
 
-          # ==============================
           # WebKit
-          # ==============================
-
           - browser: WebKit
             shard: 1
           - browser: WebKit
@@ -77,17 +65,8 @@ jobs:
       TEST_ENV: QA
 
     steps:
-
-      # ==============================
-      # Checkout
-      # ==============================
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # ==============================
-      # Setup Node.js
-      # ==============================
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -95,25 +74,13 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      # ==============================
-      # Install Project Dependencies
-      # ==============================
-
       - name: Install dependencies
         run: npm ci
-
-      # ==============================
-      # Verify Playwright Version
-      # ==============================
 
       - name: Verify Playwright version
         run: |
           npx playwright --version
           node -p "require('@playwright/test/package.json').version"
-
-      # ==============================
-      # Run Playwright Tests
-      # ==============================
 
       - name: Run Playwright tests
         run: >
@@ -121,10 +88,6 @@ jobs:
           --project="${{ matrix.browser }}"
           --shard=${{ matrix.shard }}/4
           --workers=${{ env.PW_WORKERS }}
-
-      # ==============================
-      # Upload Playwright Blob Report
-      # ==============================
 
       - name: Upload Playwright Blob Report
         if: ${{ !cancelled() }}
@@ -135,10 +98,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      # ==============================
-      # Upload Allure Results
-      # ==============================
-
       - name: Upload Allure Results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -147,7 +106,6 @@ jobs:
           path: allure-results/
           if-no-files-found: warn
           retention-days: 30
-
 
   # ============================================================
   # MERGE REPORTS
@@ -164,17 +122,8 @@ jobs:
       options: --user 1001
 
     steps:
-
-      # ==============================
-      # Checkout
-      # ==============================
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # ==============================
-      # Setup Node.js
-      # ==============================
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -182,23 +131,11 @@ jobs:
           node-version: lts/*
           cache: npm
 
-      # ==============================
-      # Install Project Dependencies
-      # ==============================
-
       - name: Install dependencies
         run: npm ci
 
-      # ==============================
-      # Verify Playwright Version
-      # ==============================
-
       - name: Verify Playwright version
         run: npx playwright --version
-
-      # ==============================
-      # Download Playwright Blob Reports
-      # ==============================
 
       - name: Download Playwright Blob Reports
         uses: actions/download-artifact@v4
@@ -207,16 +144,8 @@ jobs:
           path: blob-reports
           merge-multiple: true
 
-      # ==============================
-      # Merge Playwright HTML Report
-      # ==============================
-
       - name: Merge Playwright HTML Report
         run: npx playwright merge-reports --reporter html blob-reports
-
-      # ==============================
-      # Upload Merged Playwright Report
-      # ==============================
 
       - name: Upload Merged Playwright Report
         if: ${{ !cancelled() }}
@@ -227,10 +156,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      # ==============================
-      # Download Allure Results
-      # ==============================
-
       - name: Download Allure Results
         uses: actions/download-artifact@v4
         with:
@@ -238,16 +163,8 @@ jobs:
           path: allure-results
           merge-multiple: true
 
-      # ==============================
-      # Generate Allure Report
-      # ==============================
-
       - name: Generate Allure Report
         run: npx allure generate allure-results -o allure-report
-
-      # ==============================
-      # Upload Merged Allure Report
-      # ==============================
 
       - name: Upload Merged Allure Report
         if: ${{ !cancelled() }}
@@ -257,61 +174,3 @@ jobs:
           path: allure-report/
           if-no-files-found: warn
           retention-days: 30
-
-
-  # ============================================================
-  # DEPLOY PLAYWRIGHT REPORT TO GITHUB PAGES
-  # ============================================================
-
-  deploy-pages:
-    name: Deploy Playwright Report
-    needs: merge-reports
-
-    if: >-
-      ${{
-        github.event_name != 'pull_request' &&
-        !cancelled() &&
-        needs.merge-reports.result == 'success'
-      }}
-
-    runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-
-      # ==============================
-      # Download Merged Playwright Report
-      # ==============================
-
-      - name: Download Playwright Report
-        uses: actions/download-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report
-
-      # ==============================
-      # Configure GitHub Pages
-      # ==============================
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      # ==============================
-      # Upload Report to Pages
-      # ==============================
-
-      - name: Upload Playwright Report to Pages
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: playwright-report
-
-      # ==============================
-      # Deploy
-      # ==============================
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
