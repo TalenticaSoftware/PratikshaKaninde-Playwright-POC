@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
       options: --user 1001
 
     strategy:
@@ -107,14 +107,20 @@ jobs:
       # ==============================
 
       - name: Verify Playwright version
-        run: npx playwright --version
+        run: |
+          npx playwright --version
+          node -p "require('@playwright/test/package.json').version"
 
       # ==============================
       # Run Playwright Tests
       # ==============================
 
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/4 --workers=${{ env.PW_WORKERS }}
+        run: >
+          npx playwright test
+          --project="${{ matrix.browser }}"
+          --shard=${{ matrix.shard }}/4
+          --workers=${{ env.PW_WORKERS }}
 
       # ==============================
       # Upload Playwright Blob Report
@@ -126,6 +132,7 @@ jobs:
         with:
           name: playwright-blob-${{ matrix.browser }}-${{ matrix.shard }}
           path: blob-report/
+          if-no-files-found: warn
           retention-days: 30
 
       # ==============================
@@ -138,6 +145,7 @@ jobs:
         with:
           name: allure-results-${{ matrix.browser }}-${{ matrix.shard }}
           path: allure-results/
+          if-no-files-found: warn
           retention-days: 30
 
 
@@ -152,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: mcr.microsoft.com/playwright:v1.61.1-noble
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
       options: --user 1001
 
     steps:
@@ -216,6 +224,7 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+          if-no-files-found: error
           retention-days: 30
 
       # ==============================
@@ -246,6 +255,7 @@ jobs:
         with:
           name: allure-report
           path: allure-report/
+          if-no-files-found: warn
           retention-days: 30
 
 
@@ -256,7 +266,14 @@ jobs:
   deploy-pages:
     name: Deploy Playwright Report
     needs: merge-reports
-    if: ${{ github.event_name != 'pull_request' && !cancelled() }}
+
+    if: >-
+      ${{
+        github.event_name != 'pull_request' &&
+        !cancelled() &&
+        needs.merge-reports.result == 'success'
+      }}
+
     runs-on: ubuntu-latest
 
     environment:
