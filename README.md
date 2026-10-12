@@ -3,7 +3,7 @@ A scalable UI and API automation framework built using Playwright and TypeScript
 
 ##  Playwright Test Report
 
- **[View Live Playwright HTML Report](https://kanindepratiksha.github.io/Playwright-Learning/)**
+ **[View Live Playwright HTML Report](https://talenticasoftware.github.io/PratikshaKaninde-Playwright-POC/)**
 
 The live report contains the latest Playwright test execution results, including:
 
